@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
+	"github.com/sashabaranov/go-openai"
 )
 
 //for future use,
@@ -28,8 +29,6 @@ func main() {
 
 	httpClient := http.Client{}
 
-	fmt.Println(redditToken)
-
 	if redditToken == "" {
 		fmt.Println("Getting new auth token...")
 		if redditUsername == "" || redditPassword == "" || redditClientId == "" || redditClientSecret == "" {
@@ -44,15 +43,27 @@ func main() {
 		return
 	}
 
-	fmt.Println("reached end")
-
 	var commentInfo CommentResponseData
 
 	if err := commentInfo.getCommentInfo(&httpClient, redditToken, "t1_l3hp8d2", ApiDomain); err != nil {
 		log.Fatal("Error getting comment info: " + err.Error())
 	}
 
-	fmt.Println(commentInfo)
-	fmt.Println("parent: ", commentInfo.Data.Children[0].Data.ParentID)
+	contentForOpenAIMessage, err := commentInfo.createContentString("agree")
+	if err != nil {
+		log.Fatal("Error creating content string " + err.Error())
+	}
+	fmt.Println(contentForOpenAIMessage)
+
+	openAIToken := os.Getenv("OPENAI_TOKEN")
+	if openAIToken == "" {
+		log.Fatal("Error finding openai api token")
+	}
+
+	openAIClient := openai.NewClient(openAIToken)
+
+	if err := generateMeanReply(&httpClient, openAIClient, contentForOpenAIMessage); err != nil {
+		log.Fatal("Error generating mean reply comment" + err.Error())
+	}
 
 }

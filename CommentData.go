@@ -74,3 +74,18 @@ func (commentData *CommentResponseData) getCommentInfo(httpClient *http.Client, 
 
 	return nil
 }
+
+func (commentData *CommentResponseData) createContentString(position string) (string, error) {
+
+	contentString := ""
+	commentMainData := &commentData.Data.Children[0]
+
+	if commentMainData.Data.Body == "" || commentMainData.Data.Subreddit == "" {
+		return contentString, errors.New("comment Body or subreddit not found")
+	}
+	contentString += "comment: '" + commentMainData.Data.Body + "', subreddit: '" +
+		commentMainData.Data.Subreddit + "', position: '" + position + "'"
+
+	return contentString, nil
+
+}
