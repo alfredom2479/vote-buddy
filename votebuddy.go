@@ -1,10 +1,14 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 	"github.com/sashabaranov/go-openai"
@@ -45,7 +49,7 @@ func main() {
 
 	var commentInfo CommentResponseData
 
-	if err := commentInfo.getCommentInfo(&httpClient, redditToken, "t1_l3hp8d2", ApiDomain); err != nil {
+	if err := commentInfo.getCommentInfo(&httpClient, redditToken, "t1_l9nb9df", ApiDomain); err != nil {
 		log.Fatal("Error getting comment info: " + err.Error())
 	}
 
@@ -62,8 +66,51 @@ func main() {
 
 	openAIClient := openai.NewClient(openAIToken)
 
-	if err := generateMeanReply(&httpClient, openAIClient, contentForOpenAIMessage); err != nil {
+	generatedReplyComment, err := generateReply(&httpClient, openAIClient, contentForOpenAIMessage)
+	if err != nil {
 		log.Fatal("Error generating mean reply comment" + err.Error())
 	}
 
+	err = sendReply(&httpClient, "t1_l9nb9df", generatedReplyComment, redditToken)
+	if err != nil {
+		log.Fatal("Error sending generated reply comment to reddit")
+	}
+	fmt.Println("Comment Succesfully replied to")
+}
+
+func sendReply(httpClient *http.Client, parentComment, replyBody, accessToken string) error {
+
+	formData := url.Values{}
+	formData.Set("api_type", "json")
+	formData.Set("return_rtjson", "true")
+	formData.Set("parent", parentComment)
+	formData.Set("text", replyBody)
+
+	req, err := http.NewRequest("POST", ApiDomain+"/api/comment", strings.NewReader(formData.Encode()))
+	if err != nil {
+		return errors.New("Error making new HTTP request to /api/comment: " + err.Error())
+	}
+
+	req.Header.Add("AUthorization", "bearer "+accessToken)
+	//req.Header.Add("User-Agent") I dont think i need this
+
+	res, err := httpClient.Do(req)
+	if err != nil {
+		return errors.New("Error sending/receiving api/comment/ request: " + err.Error())
+	}
+
+	fmt.Println(res.Status)
+
+	if res.StatusCode != 200 {
+		return errors.New("HTTP response not OK: " + res.Status)
+	}
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return errors.New("Error reading response body: " + err.Error())
+	}
+
+	fmt.Println(string(body))
+
+	return nil
 }

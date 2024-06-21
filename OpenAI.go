@@ -10,11 +10,11 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 )
 
-func generateMeanReply(httpClient *http.Client, openAIClient *openai.Client, content string) error {
+func generateReply(httpClient *http.Client, openAIClient *openai.Client, content string) (string, error) {
 
 	openAIThread, err := openAIClient.CreateThread(context.Background(), openai.ThreadRequest{})
 	if err != nil {
-		return errors.New("Error creating OpenAI Thread: " + err.Error())
+		return "", errors.New("Error creating OpenAI Thread: " + err.Error())
 	}
 
 	_, err = openAIClient.CreateMessage(
@@ -26,7 +26,7 @@ func generateMeanReply(httpClient *http.Client, openAIClient *openai.Client, con
 		},
 	)
 	if err != nil {
-		return errors.New("Error creasting OpenAI message: " + err.Error())
+		return "", errors.New("Error creasting OpenAI message: " + err.Error())
 	}
 
 	runresp, err := openAIClient.CreateRun(
@@ -38,7 +38,7 @@ func generateMeanReply(httpClient *http.Client, openAIClient *openai.Client, con
 		},
 	)
 	if err != nil {
-		return errors.New("Error running message: " + err.Error())
+		return "", errors.New("Error running message: " + err.Error())
 	}
 
 	threadStatus := "queued"
@@ -52,13 +52,13 @@ func generateMeanReply(httpClient *http.Client, openAIClient *openai.Client, con
 			runresp.ID,
 		)
 		if err != nil {
-			return errors.New("Error retrieving run status: " + err.Error())
+			return "", errors.New("Error retrieving run status: " + err.Error())
 		}
 		threadStatus = string(runresp.Status)
 		fmt.Println("run status", runresp.Status)
 		numberOfStatusChecks += 1
 		if numberOfStatusChecks > 15 {
-			return errors.New("max number of run status checks reached")
+			return "", errors.New("max number of run status checks reached")
 		}
 	}
 
@@ -71,15 +71,15 @@ func generateMeanReply(httpClient *http.Client, openAIClient *openai.Client, con
 		nil,
 	)
 	if err != nil {
-		return errors.New("Error lising openai messages: " + err.Error())
+		return "", errors.New("Error lising openai messages: " + err.Error())
 	}
 
 	if len(messages.Messages) > 0 && len(messages.Messages[0].Content) > 0 &&
 		messages.Messages[0].Content[0].Text != nil {
 		fmt.Println("generated comment:", messages.Messages[0].Content[0].Text.Value)
 	} else {
-		return errors.New("error getting generated comment content")
+		return "", errors.New("error getting generated comment content")
 	}
-	return nil
+	return messages.Messages[0].Content[0].Text.Value, nil
 
 }
