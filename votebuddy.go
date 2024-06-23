@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/joho/godotenv"
-	"github.com/sashabaranov/go-openai"
 )
 
 //for future use,
@@ -47,35 +46,49 @@ func main() {
 		return
 	}
 
-	var commentInfo CommentResponseData
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", handleGetRoot)
+	mux.HandleFunc("/test", testHandler)
+	mux.HandleFunc("/butt", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "Butts are cool")
+	})
+	mux.HandleFunc("/submit-url", func(w http.ResponseWriter, r *http.Request) { fmt.Fprintf(w, "form submitted") })
+	//mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { fmt.Fprintf(w, "page has not been created.") })
 
-	if err := commentInfo.getCommentInfo(&httpClient, redditToken, "t1_l9nb9df", ApiDomain); err != nil {
-		log.Fatal("Error getting comment info: " + err.Error())
-	}
+	fmt.Println("sever is listening")
+	http.ListenAndServe(":1234", mux)
 
-	contentForOpenAIMessage, err := commentInfo.createContentString("agree")
-	if err != nil {
-		log.Fatal("Error creating content string " + err.Error())
-	}
-	fmt.Println(contentForOpenAIMessage)
+	/*
+		var commentInfo CommentResponseData
 
-	openAIToken := os.Getenv("OPENAI_TOKEN")
-	if openAIToken == "" {
-		log.Fatal("Error finding openai api token")
-	}
+		if err := commentInfo.getCommentInfo(&httpClient, redditToken, "t1_l9nb9df", ApiDomain); err != nil {
+			log.Fatal("Error getting comment info: " + err.Error())
+		}
 
-	openAIClient := openai.NewClient(openAIToken)
+		contentForOpenAIMessage, err := commentInfo.createContentString("agree")
+		if err != nil {
+			log.Fatal("Error creating content string " + err.Error())
+		}
+		fmt.Println(contentForOpenAIMessage)
 
-	generatedReplyComment, err := generateReply(&httpClient, openAIClient, contentForOpenAIMessage)
-	if err != nil {
-		log.Fatal("Error generating mean reply comment" + err.Error())
-	}
+		openAIToken := os.Getenv("OPENAI_TOKEN")
+		if openAIToken == "" {
+			log.Fatal("Error finding openai api token")
+		}
 
-	err = sendReply(&httpClient, "t1_l9nb9df", generatedReplyComment, redditToken)
-	if err != nil {
-		log.Fatal("Error sending generated reply comment to reddit")
-	}
-	fmt.Println("Comment Succesfully replied to")
+		openAIClient := openai.NewClient(openAIToken)
+
+		generatedReplyComment, err := generateReply(&httpClient, openAIClient, contentForOpenAIMessage)
+		if err != nil {
+			log.Fatal("Error generating mean reply comment" + err.Error())
+		}
+
+		err = sendReply(&httpClient, "t1_l9nb9df", generatedReplyComment, redditToken)
+		if err != nil {
+			log.Fatal("Error sending generated reply comment to reddit")
+		}
+		fmt.Println("Comment Succesfully replied to")
+	*/
 }
 
 func sendReply(httpClient *http.Client, parentComment, replyBody, accessToken string) error {
