@@ -9,7 +9,6 @@ import (
 )
 
 func handleGetRoot(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("handleGetRoot func is hit")
 
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
@@ -24,11 +23,12 @@ func handleCommentLinkSubmission(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		r.ParseForm()
 		formVals := r.Form
+		//go func() {
 
 		commentFullName, err := getCommentFullName(formVals["share-link"][0])
 		if err != nil {
 			fmt.Println("Error getting comment full name: " + err.Error())
-			fmt.Fprintf(w, "Comment Share Link is not valid")
+			fmt.Fprintf(w, "<p>Comment Share Link is not valid</p>")
 			return
 		}
 		fmt.Println("comment full name:" + commentFullName)
@@ -38,7 +38,7 @@ func handleCommentLinkSubmission(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(isGeneratingComment.Load())
 		if isGeneratingComment.Load() {
 			fmt.Println("Already generating comment")
-			fmt.Fprintf(w, "Comment already being generated")
+			fmt.Fprintf(w, "<p>Comment already being generated</p>")
 			return
 		}
 
@@ -51,22 +51,22 @@ func handleCommentLinkSubmission(w http.ResponseWriter, r *http.Request) {
 
 		if err := commentInfo.getCommentInfo(&httpClient, redditToken, commentFullName, ApiDomain); err != nil {
 			fmt.Println("Error getting comment info: " + err.Error())
-			fmt.Fprintf(w, "Could not generate comment")
+			fmt.Fprintf(w, "<p>Could not generate comment</p>")
 			return
 		}
 
 		contentForOpenAIMessage, err := commentInfo.createContentString("agree")
 		if err != nil {
 			fmt.Println("Error creating content string " + err.Error())
-			fmt.Fprintf(w, "Could not generate comment")
+			fmt.Fprintf(w, "<p>Could not generate comment</p>")
 			return
 		}
-		fmt.Println(contentForOpenAIMessage)
+		//fmt.Println(contentForOpenAIMessage)
 
 		openAIToken := os.Getenv("OPENAI_TOKEN")
 		if openAIToken == "" {
 			fmt.Println("Error finding openai api token")
-			fmt.Fprintf(w, "Could not generate comment")
+			fmt.Fprintf(w, "<p>Could not generate comment</p>")
 			return
 		}
 
@@ -75,20 +75,21 @@ func handleCommentLinkSubmission(w http.ResponseWriter, r *http.Request) {
 		generatedReplyComment, err := generateReply(&httpClient, openAIClient, contentForOpenAIMessage)
 		if err != nil {
 			fmt.Println("Error generating mean reply comment" + err.Error())
-			fmt.Fprintf(w, "Could not generate comment")
+			fmt.Fprintf(w, "<p>Could not generate comment</p>")
 			return
 		}
 
 		replyData, err := sendReply(&httpClient, commentFullName, generatedReplyComment, redditToken)
 		if err != nil {
 			fmt.Println("Error sending generated reply comment to reddit")
-			fmt.Fprintf(w, "Could not generate comment")
+			fmt.Fprintf(w, "<p>Could not generate comment</p>")
 			return
 		}
 
 		isGeneratingComment.Store(false)
-		fmt.Println(replyData)
+		//fmt.Println(replyData)
 		fmt.Println("Comment Succesfully replied to")
-		fmt.Fprintf(w, "Comment succesfully generated : reddit.com/"+replyData.Permalink)
+		fmt.Fprintf(w, "<p>Comment succesfully generated :</p> <a>reddit.com/"+replyData.Permalink+"</a>")
+		//}()
 	}
 }

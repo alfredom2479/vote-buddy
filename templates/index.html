@@ -5,19 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vote Buddy</title>
     <script src="https://unpkg.com/htmx.org@2.0.0" integrity="sha384-wS5l5IKJBvK6sPTKa2WZ1js3d947pvWXbPJ1OmWfEuxLgeHcEbjUUA5i9V5ZkpCw" crossorigin="anonymous"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
   </head>
 <body>
-  <div id="content">
-    <h1>Vote Buddy</h1>
-    <form id="redditCommentLinkForm" hx-post="/submit-link" hx-trigger="submit" hx-target="#response-holder" >
-      <label for="redditCommentLinkInput">Enter a reddit comment share-link:</label>
-      <input type="share-link" id="redditCommentLinkInput" name="share-link" required>
-      <button type="submit">Submit</button>
+  <div class="flex flex-col items-center w-full" id="content">
+    <h1 class="text-orange-600 text-3xl font-bold p-4">Vote Buddy</h1>
+    <form id="redditCommentLinkForm" hx-post="/submit-link" hx-trigger="submit" hx-target="#response-holder" 
+    class="flex flex-col items-center w-full">
+      <label for="redditCommentLinkInput">Reddit Comment Share-Link:</label>
+      <input type="share-link" id="redditCommentLinkInput" name="share-link" required
+      class="border-orange-600 border-2 rounded-md w-[90%] ">
+      <button id="submitButton" type="submit">Submit</button>
+      <p class="htmx-indicator">Generating comment</p>
     </form>
     <div id="response-holder">
 
     </div>
   </div>
-  
+  <script>
+    document.addEventListener('htmx:beforeRequest', function(event) {
+        //document.getElementById('loadingIndicator').classList.add('active');
+        document.getElementById('submitButton').disabled = true;
+    });
+
+    document.addEventListener('htmx:afterRequest', function(event) {
+        //document.getElementById('loadingIndicator').classList.remove('active');
+        document.getElementById('submitButton').disabled = false;
+    });
+</script>
 </body>
 </html>

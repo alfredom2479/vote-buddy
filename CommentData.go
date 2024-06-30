@@ -65,6 +65,7 @@ func (commentData *CommentResponseData) getCommentInfo(httpClient *http.Client, 
 	}
 
 	req.Header.Add("Authorization", "bearer "+accessToken)
+	req.Header.Add("User-Agent", "Vote Buddy 1.0")
 
 	fmt.Println("sneding req!")
 	res, err := httpClient.Do(req)

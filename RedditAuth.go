@@ -40,6 +40,7 @@ func (tokenData *RedditAuthTokenData) getAuthToken(httpClient *http.Client, user
 	}
 
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("User-Agent", "Vote Buddy 1.0")
 	req.SetBasicAuth(clientID, clientSecret)
 
 	res, err := httpClient.Do(req)
