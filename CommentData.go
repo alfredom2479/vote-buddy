@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -39,6 +40,17 @@ type CommentResponseData struct {
 	} `json:"data"`
 }
 
+type ReplyCommentData struct {
+	SubredditID string `json:"subreddit_id"`
+	Subreddit   string `json:"subreddit"`
+	Name        string `json:"name"`
+	LinkID      string `json:"link_id"`
+	ID          string `json:"id"`
+	Author      string `json:"author"`
+	Body        string `json:"body"`
+	Permalink   string `json:"permalink"`
+}
+
 func (commentData *CommentResponseData) getCommentInfo(httpClient *http.Client, accessToken string, commentFullName string, apiUrl string) error {
 
 	params := url.Values{}
@@ -54,6 +66,7 @@ func (commentData *CommentResponseData) getCommentInfo(httpClient *http.Client, 
 
 	req.Header.Add("Authorization", "bearer "+accessToken)
 
+	fmt.Println("sneding req!")
 	res, err := httpClient.Do(req)
 	if err != nil {
 		return errors.New("Error sending/receiving http comment req/res: " + err.Error())

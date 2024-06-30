@@ -3,17 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome</title>
+    <title>Vote Buddy</title>
     <script src="https://unpkg.com/htmx.org@2.0.0" integrity="sha384-wS5l5IKJBvK6sPTKa2WZ1js3d947pvWXbPJ1OmWfEuxLgeHcEbjUUA5i9V5ZkpCw" crossorigin="anonymous"></script>
   </head>
 <body>
   <div id="content">
-    <h1>Welcome</h1>
-    <form id="redditCommentLinkForm" hx-post="/submit-url" hx-trigger="submit" hx-swap="outerHTML">
+    <h1>Vote Buddy</h1>
+    <form id="redditCommentLinkForm" hx-post="/submit-link" hx-trigger="submit" hx-target="#response-holder" >
       <label for="redditCommentLinkInput">Enter a reddit comment share-link:</label>
       <input type="share-link" id="redditCommentLinkInput" name="share-link" required>
       <button type="submit">Submit</button>
     </form>
+    <div id="response-holder">
+
+    </div>
   </div>
+  
 </body>
 </html>

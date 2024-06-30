@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync/atomic"
 
 	"github.com/joho/godotenv"
 )
@@ -18,8 +20,11 @@ import (
 const ApiAuthDomain = "https://www.reddit.com/api/v1/access_token?scope=*"
 const ApiDomain = "https://oauth.reddit.com"
 
+var isGeneratingComment atomic.Bool
+
 func main() {
 
+	isGeneratingComment.Store(false)
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
@@ -30,9 +35,9 @@ func main() {
 	redditClientSecret := os.Getenv("REDDIT_CLIENT_SECRET")
 	redditToken := os.Getenv("REDDIT_TOKEN")
 
-	httpClient := http.Client{}
-
 	if redditToken == "" {
+		httpClient := http.Client{}
+
 		fmt.Println("Getting new auth token...")
 		if redditUsername == "" || redditPassword == "" || redditClientId == "" || redditClientSecret == "" {
 			log.Fatal("reddit auth data is missing from environment variables")
@@ -48,50 +53,16 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handleGetRoot)
-	mux.HandleFunc("/test", testHandler)
-	mux.HandleFunc("/butt", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Butts are cool")
-	})
-	mux.HandleFunc("/submit-url", func(w http.ResponseWriter, r *http.Request) { fmt.Fprintf(w, "form submitted") })
-	//mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { fmt.Fprintf(w, "page has not been created.") })
+	mux.HandleFunc("/submit-link", handleCommentLinkSubmission)
 
 	fmt.Println("sever is listening")
 	http.ListenAndServe(":1234", mux)
 
-	/*
-		var commentInfo CommentResponseData
-
-		if err := commentInfo.getCommentInfo(&httpClient, redditToken, "t1_l9nb9df", ApiDomain); err != nil {
-			log.Fatal("Error getting comment info: " + err.Error())
-		}
-
-		contentForOpenAIMessage, err := commentInfo.createContentString("agree")
-		if err != nil {
-			log.Fatal("Error creating content string " + err.Error())
-		}
-		fmt.Println(contentForOpenAIMessage)
-
-		openAIToken := os.Getenv("OPENAI_TOKEN")
-		if openAIToken == "" {
-			log.Fatal("Error finding openai api token")
-		}
-
-		openAIClient := openai.NewClient(openAIToken)
-
-		generatedReplyComment, err := generateReply(&httpClient, openAIClient, contentForOpenAIMessage)
-		if err != nil {
-			log.Fatal("Error generating mean reply comment" + err.Error())
-		}
-
-		err = sendReply(&httpClient, "t1_l9nb9df", generatedReplyComment, redditToken)
-		if err != nil {
-			log.Fatal("Error sending generated reply comment to reddit")
-		}
-		fmt.Println("Comment Succesfully replied to")
-	*/
 }
 
-func sendReply(httpClient *http.Client, parentComment, replyBody, accessToken string) error {
+func sendReply(httpClient *http.Client, parentComment, replyBody, accessToken string) (*ReplyCommentData, error) {
+
+	var replyCommentData ReplyCommentData
 
 	formData := url.Values{}
 	formData.Set("api_type", "json")
@@ -101,7 +72,7 @@ func sendReply(httpClient *http.Client, parentComment, replyBody, accessToken st
 
 	req, err := http.NewRequest("POST", ApiDomain+"/api/comment", strings.NewReader(formData.Encode()))
 	if err != nil {
-		return errors.New("Error making new HTTP request to /api/comment: " + err.Error())
+		return &replyCommentData, errors.New("Error making new HTTP request to /api/comment: " + err.Error())
 	}
 
 	req.Header.Add("AUthorization", "bearer "+accessToken)
@@ -109,21 +80,25 @@ func sendReply(httpClient *http.Client, parentComment, replyBody, accessToken st
 
 	res, err := httpClient.Do(req)
 	if err != nil {
-		return errors.New("Error sending/receiving api/comment/ request: " + err.Error())
+		return &replyCommentData, errors.New("Error sending/receiving api/comment/ request: " + err.Error())
 	}
 
 	fmt.Println(res.Status)
 
 	if res.StatusCode != 200 {
-		return errors.New("HTTP response not OK: " + res.Status)
+		return &replyCommentData, errors.New("HTTP response not OK: " + res.Status)
 	}
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return errors.New("Error reading response body: " + err.Error())
+		return &replyCommentData, errors.New("Error reading response body: " + err.Error())
 	}
 
-	fmt.Println(string(body))
+	if err := json.Unmarshal([]byte(string(body)), &replyCommentData); err != nil {
+		return &replyCommentData, errors.New("Error unmarshalling into replyCommentDataStruct" + err.Error())
+	}
 
-	return nil
+	fmt.Println(replyCommentData)
+
+	return &replyCommentData, nil
 }
