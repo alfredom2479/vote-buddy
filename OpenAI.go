@@ -76,7 +76,7 @@ func generateReply(httpClient *http.Client, openAIClient *openai.Client, content
 
 	if len(messages.Messages) > 0 && len(messages.Messages[0].Content) > 0 &&
 		messages.Messages[0].Content[0].Text != nil {
-		fmt.Println("generated comment:", messages.Messages[0].Content[0].Text.Value)
+		//fmt.Println("generated comment:", messages.Messages[0].Content[0].Text.Value)
 	} else {
 		return "", errors.New("error getting generated comment content")
 	}

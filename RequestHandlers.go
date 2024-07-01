@@ -52,21 +52,27 @@ func handleCommentLinkSubmission(w http.ResponseWriter, r *http.Request) {
 		if err := commentInfo.getCommentInfo(&httpClient, redditToken, commentFullName, ApiDomain); err != nil {
 			fmt.Println("Error getting comment info: " + err.Error())
 			fmt.Fprintf(w, "<p>Could not generate comment</p>")
+			isGeneratingComment.Store(false)
 			return
 		}
+
+		fmt.Println("parent id: " + commentInfo.Data.Children[0].Data.ParentID)
+		fmt.Println("author name" + commentInfo.Data.Children[0].Data.Author)
 
 		contentForOpenAIMessage, err := commentInfo.createContentString("agree")
 		if err != nil {
 			fmt.Println("Error creating content string " + err.Error())
 			fmt.Fprintf(w, "<p>Could not generate comment</p>")
+			isGeneratingComment.Store(false)
 			return
 		}
-		//fmt.Println(contentForOpenAIMessage)
+		fmt.Println("content for AI: " + contentForOpenAIMessage)
 
 		openAIToken := os.Getenv("OPENAI_TOKEN")
 		if openAIToken == "" {
 			fmt.Println("Error finding openai api token")
 			fmt.Fprintf(w, "<p>Could not generate comment</p>")
+			isGeneratingComment.Store(false)
 			return
 		}
 
@@ -76,6 +82,7 @@ func handleCommentLinkSubmission(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			fmt.Println("Error generating mean reply comment" + err.Error())
 			fmt.Fprintf(w, "<p>Could not generate comment</p>")
+			isGeneratingComment.Store(false)
 			return
 		}
 
@@ -83,13 +90,14 @@ func handleCommentLinkSubmission(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			fmt.Println("Error sending generated reply comment to reddit")
 			fmt.Fprintf(w, "<p>Could not generate comment</p>")
+			isGeneratingComment.Store(false)
 			return
 		}
 
 		isGeneratingComment.Store(false)
 		//fmt.Println(replyData)
 		fmt.Println("Comment Succesfully replied to")
-		fmt.Fprintf(w, "<p>Comment succesfully generated :</p> <a>reddit.com/"+replyData.Permalink+"</a>")
+		fmt.Fprintf(w, "<p>Vote Buddy Has Replied</p> <a href='https://www.reddit.com"+replyData.Permalink+"' class='underline text-blue-800'>See Generated Reply</a>")
 		//}()
 	}
 }

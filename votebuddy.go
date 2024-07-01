@@ -47,6 +47,7 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
+	mux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("assets"))))
 	mux.HandleFunc("/", handleGetRoot)
 	mux.HandleFunc("/submit-link", handleCommentLinkSubmission)
 

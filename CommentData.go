@@ -97,7 +97,9 @@ func (commentData *CommentResponseData) createContentString(position string) (st
 	if commentMainData.Data.Body == "" || commentMainData.Data.Subreddit == "" {
 		return contentString, errors.New("comment Body or subreddit not found")
 	}
-	contentString += "comment: '" + commentMainData.Data.Body + "', subreddit: '" +
+
+	//working on this
+	contentString += "comment thread: '" + commentMainData.Data.Author + "-" + commentMainData.Data.Body + "', subreddit: '" +
 		commentMainData.Data.Subreddit + "', position: '" + position + "'"
 
 	return contentString, nil

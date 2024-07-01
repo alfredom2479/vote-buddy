@@ -52,7 +52,7 @@ func sendReply(httpClient *http.Client, parentComment, replyBody, accessToken st
 		return &replyCommentData, errors.New("Error sending/receiving api/comment/ request: " + err.Error())
 	}
 
-	fmt.Println(res.Status)
+	//fmt.Println(res.Status)
 
 	if res.StatusCode != 200 {
 		return &replyCommentData, errors.New("HTTP response not OK: " + res.Status)
@@ -67,7 +67,7 @@ func sendReply(httpClient *http.Client, parentComment, replyBody, accessToken st
 		return &replyCommentData, errors.New("Error unmarshalling into replyCommentDataStruct" + err.Error())
 	}
 
-	fmt.Println(replyCommentData)
+	//fmt.Println(replyCommentData)
 
 	return &replyCommentData, nil
 }
