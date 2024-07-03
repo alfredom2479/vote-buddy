@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	openai "github.com/sashabaranov/go-openai"
 )
@@ -23,7 +24,10 @@ func handleCommentLinkSubmission(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		r.ParseForm()
 		formVals := r.Form
-		//go func() {
+
+		fmt.Println(formVals)
+
+		voteBuddyPosition := "agree"
 
 		commentFullName, err := getCommentFullName(formVals["share-link"][0])
 		if err != nil {
@@ -31,11 +35,20 @@ func handleCommentLinkSubmission(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, "<p>Comment Share Link is not valid</p>")
 			return
 		}
-		fmt.Println("comment full name:" + commentFullName)
 
+		voteOption := formVals["voteOption"][0]
+
+		switch voteOption {
+		case "downvote":
+			voteBuddyPosition = "disagree"
+		case "upvote":
+			voteBuddyPosition = "agree"
+		default:
+			voteBuddyPosition = "agree"
+
+		}
 		//Start the comment reply process
 
-		fmt.Println(isGeneratingComment.Load())
 		if isGeneratingComment.Load() {
 			fmt.Println("Already generating comment")
 			fmt.Fprintf(w, "<p>Comment already being generated</p>")
@@ -47,19 +60,57 @@ func handleCommentLinkSubmission(w http.ResponseWriter, r *http.Request) {
 		httpClient := http.Client{}
 		redditToken := os.Getenv("REDDIT_TOKEN")
 
-		var commentInfo CommentResponseData
+		var commentInfoSlice []CommentResponseData
+		var postInfo CommentResponseData
 
-		if err := commentInfo.getCommentInfo(&httpClient, redditToken, commentFullName, ApiDomain); err != nil {
+		currContentName := commentFullName
+		numOfReqs := 0
+		//var commentInfo CommentResponseData
+
+		for {
+
+			commentInfo := CommentResponseData{}
+
+			numOfReqs += 1
+
+			if err := commentInfo.getCommentInfo(&httpClient, redditToken, currContentName, ApiDomain); err != nil {
+				fmt.Println("Error getting comment info: " + err.Error())
+				fmt.Fprintf(w, "<p>Could not generate comment</p>")
+				isGeneratingComment.Store(false)
+				return
+			}
+
+			commentInfoSlice = append(commentInfoSlice, commentInfo)
+
+			currContentName = commentInfo.Data.Children[0].Data.ParentID
+
+			if !strings.HasPrefix(currContentName, "t1") || numOfReqs > 15 {
+
+				if err = postInfo.getCommentInfo(&httpClient, redditToken, currContentName, ApiDomain); err != nil {
+					fmt.Println("Error getting comment info: " + err.Error())
+					fmt.Fprintf(w, "<p>Could not generate comment</p>")
+					isGeneratingComment.Store(false)
+					return
+				}
+
+				break
+			}
+		}
+
+		/*if err := commentInfo.getCommentInfo(&httpClient, redditToken, commentFullName, ApiDomain); err != nil {
 			fmt.Println("Error getting comment info: " + err.Error())
 			fmt.Fprintf(w, "<p>Could not generate comment</p>")
 			isGeneratingComment.Store(false)
 			return
 		}
+		*/
 
-		fmt.Println("parent id: " + commentInfo.Data.Children[0].Data.ParentID)
-		fmt.Println("author name" + commentInfo.Data.Children[0].Data.Author)
+		/*
+			fmt.Println("parent id: " + commentInfo.Data.Children[0].Data.ParentID)
+			fmt.Println("author name" + commentInfo.Data.Children[0].Data.Author)
+		*/
 
-		contentForOpenAIMessage, err := commentInfo.createContentString("agree")
+		contentForOpenAIMessage, err := createContentString(commentInfoSlice, &postInfo, voteBuddyPosition)
 		if err != nil {
 			fmt.Println("Error creating content string " + err.Error())
 			fmt.Fprintf(w, "<p>Could not generate comment</p>")
@@ -90,6 +141,11 @@ func handleCommentLinkSubmission(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			fmt.Println("Error sending generated reply comment to reddit")
 			fmt.Fprintf(w, "<p>Could not generate comment</p>")
+			isGeneratingComment.Store(false)
+			return
+		}
+		if replyData.ID == "" {
+			fmt.Fprintf(w, "<p>Could not post reply (original post may be deleted)</p>")
 			isGeneratingComment.Store(false)
 			return
 		}

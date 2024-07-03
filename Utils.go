@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -12,7 +11,6 @@ import (
 
 func getCommentFullName(shareLink string) (string, error) {
 
-	fmt.Println("share link: " + shareLink)
 	fullNameIndex := strings.Index(shareLink, "comment/")
 
 	if fullNameIndex == -1 {

@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -21,6 +20,7 @@ type CommentResponseData struct {
 				LinkTitle      string  `json:"link_title"`
 				Subreddit      string  `json:"subreddit"`
 				Title          string  `json:"title"`
+				Selftext       string  `json:"selftext"`
 				LinkAuthor     string  `json:"link_author"`
 				Author         string  `json:"author"`
 				ParentID       string  `json:"parent_id"`
@@ -51,7 +51,9 @@ type ReplyCommentData struct {
 	Permalink   string `json:"permalink"`
 }
 
-func (commentData *CommentResponseData) getCommentInfo(httpClient *http.Client, accessToken string, commentFullName string, apiUrl string) error {
+const myUsername = "No-Atmosphere9068"
+
+func (commentData *CommentResponseData) getCommentInfo(httpClient *http.Client, accessToken, commentFullName, apiUrl string) error {
 
 	params := url.Values{}
 
@@ -67,7 +69,6 @@ func (commentData *CommentResponseData) getCommentInfo(httpClient *http.Client, 
 	req.Header.Add("Authorization", "bearer "+accessToken)
 	req.Header.Add("User-Agent", "Vote Buddy 1.0")
 
-	fmt.Println("sneding req!")
 	res, err := httpClient.Do(req)
 	if err != nil {
 		return errors.New("Error sending/receiving http comment req/res: " + err.Error())
@@ -89,19 +90,45 @@ func (commentData *CommentResponseData) getCommentInfo(httpClient *http.Client, 
 	return nil
 }
 
-func (commentData *CommentResponseData) createContentString(position string) (string, error) {
+func createContentString(commentDataSlice []CommentResponseData, postData *CommentResponseData, position string) (string, error) {
 
-	contentString := ""
-	commentMainData := &commentData.Data.Children[0]
+	mainPostData := postData.Data.Children[0].Data
 
-	if commentMainData.Data.Body == "" || commentMainData.Data.Subreddit == "" {
-		return contentString, errors.New("comment Body or subreddit not found")
+	if len(commentDataSlice) < 1 {
+		return "", errors.New("commentDataSlice is empty")
 	}
 
-	//working on this
-	contentString += "comment thread: '" + commentMainData.Data.Author + "-" + commentMainData.Data.Body + "', subreddit: '" +
-		commentMainData.Data.Subreddit + "', position: '" + position + "'"
+	contentString := ""
+	commentAuthor := ""
 
+	for _, commentData := range commentDataSlice {
+
+		commentMainData := commentData.Data.Children[0]
+
+		if commentMainData.Data.Body == "" || commentMainData.Data.Subreddit == "" {
+			return contentString, errors.New("comment Body or subreddit not found")
+		}
+
+		commentAuthor = commentMainData.Data.Author
+
+		if commentAuthor == myUsername {
+			commentAuthor = "(ME)"
+		}
+
+		contentString = commentAuthor + "-\"" +
+			commentMainData.Data.Body + "\"\n" + contentString
+
+	}
+
+	contentString = "Comment thread: \n" + contentString
+
+	contentString += ",subreddit: '" + commentDataSlice[0].Data.Children[0].Data.Subreddit +
+		"',\nposition: '" + position +
+		"',\npost title: '" + mainPostData.Title + "'"
+
+	if mainPostData.Selftext != "" {
+		contentString += ",\npost body text: '" + mainPostData.Selftext + "'"
+	}
 	return contentString, nil
 
 }

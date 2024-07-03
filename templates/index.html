@@ -13,10 +13,29 @@
     <img class="h-48" src="/assets/reddit.svg" alt="reddit">
     <form id="redditCommentLinkForm" hx-post="/submit-link" hx-trigger="submit" hx-target="#response-holder" 
     class="flex flex-col items-center w-full">
+
       <label for="redditCommentLinkInput">Reddit Comment Share-Link:</label>
       <input type="share-link" id="redditCommentLinkInput" name="share-link" placeholder="https://www.reddit.com/r/MMA/comments/1cot47b/comment/l3hp8d2/" required
       class="border-orange-600 border-2 rounded-md w-[90%] ">
-      <button class="p-2 m-2 w-24 bg-orange-600 text-white font-bold rounded-lg hover:bg-orange-700 disabled:bg-gray-600" id="submitButton" type="submit">Submit</button>
+
+      <!-- *<label for="voteOption" class="">How should Vote Buddy response?</label> -->
+      <!-- <select id="voteOption" name="voteOption" class=""> -->
+        <!-- <option value="upvote">Upvote</option> -->
+        <!-- <option value="downvote">Downvote</option> -->
+      <!-- </select> -->
+
+      <input type="hidden" name="voteOption" id="voteOptionInput" >
+
+      <div class="flex">
+        <button type="submit" id="upvoteButton"  onclick="document.getElementById('voteOptionInput').value='upvote'" class="flex items-center justify-center m-2 w-16 h-12 bg-white border-2 border-orange-600 text-white font-bold rounded-lg hover:bg-orange-100 disabled:bg-gray-600">
+          <img src="/assets/reddit-up-arrow.svg" class="h-12 "/>
+        </button>
+        <button type="submit" id="downvoteButton" onclick="document.getElementById('voteOptionInput').value='downvote'" class="flex items-center justify-center m-2 w-16 h-12 bg-white border-2 border-orange-600 text-white font-bold rounded-lg hover:bg-orange-100 disabled:bg-gray-600">
+          <img src="/assets/reddit-down-arrow.svg" class="h-12"/>
+        </button>
+      </div>
+
+      <!-- <button class="p-2 m-2 w-24 bg-orange-600 text-white font-bold rounded-lg hover:bg-orange-700 disabled:bg-gray-600" id="submitButton" type="submit">Submit</button> -->
       <p class="htmx-indicator">Generating comment...</p>
     </form>
     <div id="response-holder" class="flex flex-col text-center" >
@@ -26,12 +45,16 @@
   <script>
     document.addEventListener('htmx:beforeRequest', function(event) {
         //document.getElementById('loadingIndicator').classList.add('active');
-        document.getElementById('submitButton').disabled = true;
+        //document.getElementById('submitButton').disabled = true;
+        document.getElementById('upvoteButton').disabled = true;
+        document.getElementById('downvoteButton').disabled = true;
     });
 
     document.addEventListener('htmx:afterRequest', function(event) {
         //document.getElementById('loadingIndicator').classList.remove('active');
-        document.getElementById('submitButton').disabled = false;
+        //document.getElementById('submitButton').disabled = false;
+        document.getElementById('upvoteButton').disabled = false;
+        document.getElementById('downvoteButton').disabled = false;
     });
 </script>
 </body>
