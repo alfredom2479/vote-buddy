@@ -8,7 +8,7 @@ import (
 	"net/url"
 )
 
-type CommentResponseData struct {
+type ListingResponseData struct {
 	Kind string `json:"kind"`
 	Data struct {
 		After    string `json:"after"`
@@ -51,14 +51,12 @@ type ReplyCommentData struct {
 	Permalink   string `json:"permalink"`
 }
 
-const myUsername = "No-Atmosphere9068"
+const MY_USERNAME = "No-Atmosphere9068"
 
-func (commentData *CommentResponseData) GetCommentInfo(httpClient *http.Client, accessToken, commentFullName, apiUrl string) error {
+func (listingData *ListingResponseData) GetCommentInfo(httpClient *http.Client, accessToken, commentFullName, apiUrl string) error {
 
 	params := url.Values{}
-
 	params.Add("id", commentFullName)
-
 	commentInfoEndpoint := apiUrl + "/api/info?" + params.Encode()
 
 	req, err := http.NewRequest("GET", commentInfoEndpoint, nil)
@@ -83,14 +81,14 @@ func (commentData *CommentResponseData) GetCommentInfo(httpClient *http.Client, 
 		return errors.New("Error reading response body: " + err.Error())
 	}
 
-	if err := json.Unmarshal([]byte(string(body)), &commentData); err != nil {
+	if err := json.Unmarshal([]byte(string(body)), &listingData); err != nil {
 		return errors.New("Erro unmarshaling into commentData struct: " + err.Error())
 	}
 
 	return nil
 }
 
-func CreateContentString(commentDataSlice []CommentResponseData, postData *CommentResponseData, position string) (string, error) {
+func CreateContentString(commentDataSlice []ListingResponseData, postData *ListingResponseData, position string) (string, error) {
 
 	mainPostData := postData.Data.Children[0].Data
 
@@ -103,6 +101,10 @@ func CreateContentString(commentDataSlice []CommentResponseData, postData *Comme
 
 	for _, commentData := range commentDataSlice {
 
+		if len(commentData.Data.Children) < 1 {
+			continue
+		}
+
 		commentMainData := commentData.Data.Children[0]
 
 		if commentMainData.Data.Body == "" || commentMainData.Data.Subreddit == "" {
@@ -111,7 +113,7 @@ func CreateContentString(commentDataSlice []CommentResponseData, postData *Comme
 
 		commentAuthor = commentMainData.Data.Author
 
-		if commentAuthor == myUsername {
+		if commentAuthor == MY_USERNAME {
 			commentAuthor = "(ME)"
 		}
 

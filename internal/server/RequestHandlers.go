@@ -28,17 +28,7 @@ func HandleCommentLinkSubmission(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 		formVals := r.Form
 
-		fmt.Println(formVals)
-
 		voteBuddyPosition := "agree"
-
-		commentFullName, err := reddit.GetCommentFullName(formVals["share-link"][0])
-		if err != nil {
-			fmt.Println("Error getting comment full name: " + err.Error())
-			fmt.Fprintf(w, "<p>Comment Share Link is not valid</p>")
-			return
-		}
-
 		voteOption := formVals["voteOption"][0]
 
 		switch voteOption {
@@ -51,18 +41,25 @@ func HandleCommentLinkSubmission(w http.ResponseWriter, r *http.Request) {
 
 		}
 
+		commentFullName, err := reddit.GetCommentFullName(formVals["share-link"][0])
+		if err != nil {
+			fmt.Println("Error getting comment full name: " + err.Error())
+			fmt.Fprintf(w, "<p>Comment Share Link is not valid</p>")
+			return
+		}
+
 		httpClient := http.Client{}
 		redditToken := os.Getenv("REDDIT_TOKEN")
 
-		var commentInfoSlice []reddit.CommentResponseData
-		var postInfo reddit.CommentResponseData
+		var commentInfoSlice []reddit.ListingResponseData
+		var postInfo reddit.ListingResponseData
 
 		currContentName := commentFullName
 		numOfReqs := 0
 
 		for {
 
-			commentInfo := reddit.CommentResponseData{}
+			commentInfo := reddit.ListingResponseData{}
 
 			numOfReqs += 1
 
@@ -95,17 +92,6 @@ func HandleCommentLinkSubmission(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		fmt.Println("content for AI: " + contentForOpenAIMessage)
-
-		/*
-			openAIToken := os.Getenv("OPENAI_TOKEN")
-			if openAIToken == "" {
-				fmt.Println("Error finding openai api token")
-				fmt.Fprintf(w, "<p>Could not generate comment</p>")
-				return
-			}
-
-			openAIClient := openai.NewClient(openAIToken)
-		*/
 
 		generatedReplyComment, err := openai.GenerateReply(&httpClient, contentForOpenAIMessage)
 		if err != nil {

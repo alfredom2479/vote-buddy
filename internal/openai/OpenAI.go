@@ -14,9 +14,9 @@ import (
 func GenerateReply(httpClient *http.Client, content string) (string, error) {
 
 	openAIToken := os.Getenv("OPENAI_TOKEN")
-	if openAIToken == "" {
-		fmt.Println("Error finding openai api token")
-		//fmt.Fprintf(w, "<p>Could not generate comment</p>")
+	assistantID := os.Getenv("OPENAI_ASSISTANT_ID")
+	if openAIToken == "" || assistantID == "" {
+		fmt.Println("Error finding openai api token or assistant ID")
 		return "", errors.New("error finding OpenAI token: ")
 	}
 
@@ -43,7 +43,7 @@ func GenerateReply(httpClient *http.Client, content string) (string, error) {
 		context.Background(),
 		openAIThread.ID,
 		openai.RunRequest{
-			AssistantID: "asst_xG4EkvBiHGP0kpHPqajAnfZ9",
+			AssistantID: assistantID,
 			Model:       "gpt-4",
 		},
 	)
@@ -65,7 +65,7 @@ func GenerateReply(httpClient *http.Client, content string) (string, error) {
 			return "", errors.New("Error retrieving run status: " + err.Error())
 		}
 		threadStatus = string(runresp.Status)
-		fmt.Println("run status", runresp.Status)
+		fmt.Println("GPT run status:", runresp.Status)
 		numberOfStatusChecks += 1
 		if numberOfStatusChecks > 15 {
 			return "", errors.New("max number of run status checks reached")
@@ -86,10 +86,9 @@ func GenerateReply(httpClient *http.Client, content string) (string, error) {
 
 	if len(messages.Messages) > 0 && len(messages.Messages[0].Content) > 0 &&
 		messages.Messages[0].Content[0].Text != nil {
-		//fmt.Println("generated comment:", messages.Messages[0].Content[0].Text.Value)
+		return messages.Messages[0].Content[0].Text.Value, nil
 	} else {
 		return "", errors.New("error getting generated comment content")
 	}
-	return messages.Messages[0].Content[0].Text.Value, nil
 
 }

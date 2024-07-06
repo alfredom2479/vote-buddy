@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-const ApiDomain = "https://oauth.reddit.com"
+const API_DOMAIN = "https://oauth.reddit.com"
 
 func GetCommentFullName(shareLink string) (string, error) {
 
@@ -39,7 +39,7 @@ func SendReply(httpClient *http.Client, parentComment, replyBody, accessToken st
 	formData.Set("parent", parentComment)
 	formData.Set("text", replyBody)
 
-	req, err := http.NewRequest("POST", ApiDomain+"/api/comment", strings.NewReader(formData.Encode()))
+	req, err := http.NewRequest("POST", API_DOMAIN+"/api/comment", strings.NewReader(formData.Encode()))
 	if err != nil {
 		return &replyCommentData, errors.New("Error making new HTTP request to /api/comment: " + err.Error())
 	}
@@ -51,8 +51,6 @@ func SendReply(httpClient *http.Client, parentComment, replyBody, accessToken st
 	if err != nil {
 		return &replyCommentData, errors.New("Error sending/receiving api/comment/ request: " + err.Error())
 	}
-
-	//fmt.Println(res.Status)
 
 	if res.StatusCode != 200 {
 		return &replyCommentData, errors.New("HTTP response not OK: " + res.Status)
@@ -66,8 +64,6 @@ func SendReply(httpClient *http.Client, parentComment, replyBody, accessToken st
 	if err := json.Unmarshal([]byte(string(body)), &replyCommentData); err != nil {
 		return &replyCommentData, errors.New("Error unmarshalling into replyCommentDataStruct" + err.Error())
 	}
-
-	//fmt.Println(replyCommentData)
 
 	return &replyCommentData, nil
 }

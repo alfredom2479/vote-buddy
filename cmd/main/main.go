@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -17,26 +18,9 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-	redditUsername := os.Getenv("REDDIT_USERNAME")
-	redditPassword := os.Getenv("REDDIT_PW")
-	redditClientId := os.Getenv("REDDIT_CLIENT_ID")
-	redditClientSecret := os.Getenv("REDDIT_CLIENT_SECRET")
-	redditToken := os.Getenv("REDDIT_TOKEN")
 
-	if redditToken == "" {
-		httpClient := http.Client{}
-
-		fmt.Println("Getting new auth token...")
-		if redditUsername == "" || redditPassword == "" || redditClientId == "" || redditClientSecret == "" {
-			log.Fatal("reddit auth data is missing from environment variables")
-		}
-		redditAuthTokenData := reddit.CreateRedditAuthTokenData()
-		if err := redditAuthTokenData.GetAuthToken(&httpClient, redditUsername, redditPassword, redditClientId, redditClientSecret); err != nil {
-			log.Fatal("Error getting reddit auth token data: " + err.Error())
-		}
-
-		fmt.Println(redditAuthTokenData)
-		return
+	if err = checkRedditToken(); err != nil {
+		log.Fatal("Failed reddit token check: " + err.Error())
 	}
 
 	mux := http.NewServeMux()
@@ -49,6 +33,32 @@ func main() {
 
 }
 
-func createRedditAuthTokenData() {
-	panic("unimplemented")
+func checkRedditToken() error {
+
+	redditUsername := os.Getenv("REDDIT_USERNAME")
+	redditPassword := os.Getenv("REDDIT_PW")
+	redditClientId := os.Getenv("REDDIT_CLIENT_ID")
+	redditClientSecret := os.Getenv("REDDIT_CLIENT_SECRET")
+	redditToken := os.Getenv("REDDIT_TOKEN")
+
+	if redditToken == "" {
+		fmt.Println("Getting new auth token...")
+
+		httpClient := http.Client{}
+
+		if redditUsername == "" || redditPassword == "" || redditClientId == "" || redditClientSecret == "" {
+			return errors.New("reddit auth data is missing from environment variables")
+		}
+
+		redditAuthTokenData := reddit.CreateRedditAuthTokenData()
+		if err := redditAuthTokenData.GetAuthToken(&httpClient, redditUsername, redditPassword, redditClientId, redditClientSecret); err != nil {
+			return errors.New("Error getting reddit auth token data: " + err.Error())
+		}
+
+		fmt.Println(redditAuthTokenData)
+		return errors.New("token has been generated")
+	}
+
+	return nil
+
 }
